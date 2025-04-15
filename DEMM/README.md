@@ -54,12 +54,12 @@ For more details about following datasets , you can refer to 'run.sh'.
 
 ### Dataset
 
- Due to space constraints, we have placed all datasets except "oag-cs", "oag-eng", and "rcdd" in the ​**​data.zip​**​ file, which can be accessed via the following link: https://www.dropbox.com/scl/fi/hs9nt4wnjz5l85pxmr7ke/data.zip?rlkey=7k0cefm468zz8vv7j8vrl7ui8&st=o5z53jv6&dl=0. 
+ Due to space constraints, we have placed all datasets except "oag-cs", "oag-eng", and "rcdd" in the ​**​data.zip​**​ file, which can be accessed via the following link: [Link to data.zip](https://www.dropbox.com/scl/fi/hs9nt4wnjz5l85pxmr7ke/data.zip?rlkey=7k0cefm468zz8vv7j8vrl7ui8&st=o5z53jv6&dl=0.). 
 
 For the "oag-cs", "oag-eng", and "rcdd" datasets, their original data access details are provided below:
 
-oag-cs: [graph_CS_20190919.pt - Google 雲端硬碟](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
+oag-cs: [Link to OAG-CS](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
 
-oag-eng: [graph_CS_20190919.pt - Google 雲端硬碟](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
+oag-eng: [Link to OAG-ENG](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
 
-rcdd: https://s3.cn-north-1.amazonaws.com.cn/dgl-data/dataset/''openhgnn/AliRCD_ICDM.zip
+rcdd: [Link to RCDD](https://s3.cn-north-1.amazonaws.com.cn/dgl-data/dataset/openhgnn/AliRCD_ICDM.zip)
