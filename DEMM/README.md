@@ -42,7 +42,7 @@ python demm-main.py  --alpha 2 --dataset acm-3025 --gamma 0. --seed 6
 
 ```
 
-For DEMM, you can run the dataset "ACM" by following example:
+For DEMM-AL, you can run the dataset "ACM" by following example:
 
 ```
 python main.py   --dataset acm-3025 --gamma 0. --dim 6  --seed 6 
