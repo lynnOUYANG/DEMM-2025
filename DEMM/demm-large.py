@@ -143,7 +143,7 @@ def train():
     output_file = '{}_results.txt'.format(args.dataset)
 
     with open(output_file, 'a') as f:
-        f.write("dataset:{}, alpha:{}, dim:{}, beta:{} \n".format(args.dataset, args.alpha, args.hidden_dim,args.beta))
+        f.write("dataset:{}, alpha:{}, dim:{}, beta:{} \n".format(args.dataset, args.alpha, args.dim,args.beta))
         f.write("ACC:{:.4}, NMI:{:.4}, ARI:{:.4}, time:{:.4}\n".format(acc, nmis, aris, end_time))
 
 
