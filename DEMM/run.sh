@@ -3,7 +3,7 @@ python main.py  --L 6 --alpha 28 --dataset dblp --gamma 0. --dim 64 --seed 42 --
 python main.py  --L 3 --alpha 4 --dataset acm-4019 --gamma 0. --dim 512  --seed 6  --beta 4.2 --method demm+ --m 10 10  --gpu 0
 python main.py  --L 16 --alpha 32 --dataset yelp --gamma 0. --dim 32 --seed 6 --beta 3 --method demm+ --m 14 12 16 --gpu 0
 python main.py  --L 13 --alpha 7 --dataset imdb --gamma 0. --dim 1024  --seed 6 --beta 6 --method demm+ --m 16 16  --gpu 0
-python large.py --L 14 --alpha 50 --dataset mag --gamma 0. --dim 32 --seed 42 --gpu 0 --beta 20 --m 12 12  --method demm+
+python large.py --L 14 --alpha 50 --dataset mag --gamma 0. --dim 32 --seed 42 --gpu 0 --beta 30 --m 12 12  --method demm+
 python large.py --L 16 --alpha 120  --dataset oag-eng --gamma 0. --dim 128 --seed 42 --gpu 0 --method demm+ --m 40 40 40 --beta 90
 python large.py --L 12 --alpha 110  --dataset oag-cs --gamma 0. --dim 128 --seed 6 --gpu 1 --method demm+ --m 36 36 36 --beta 70
 
