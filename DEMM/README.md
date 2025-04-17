@@ -60,6 +60,6 @@ For the "oag-cs", "oag-eng", and "rcdd" datasets, their original data access det
 
 oag-cs: [Link to OAG-CS](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
 
-oag-eng: [Link to OAG-ENG](https://drive.google.com/file/d/115WygJhRo1DxVLpLzJF-hFCamGc7JY5w/view?usp=drive_link)
+oag-eng: [Link to OAG-ENG](https://drive.google.com/file/d/1_n605385TzqqaVIiMQcKziSv5BUG4f4Y/view?usp=drive_link)
 
 rcdd: [Link to RCDD](https://s3.cn-north-1.amazonaws.com.cn/dgl-data/dataset/openhgnn/AliRCD_ICDM.zip)
