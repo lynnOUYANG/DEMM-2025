@@ -21,15 +21,7 @@ from scipy.sparse.linalg import eigsh
 from sklearn.utils import check_random_state, as_float_array
 from scipy.sparse import csc_matrix
 from torch.utils.dlpack import from_dlpack
-# def square_feat_map(z, c=1):
-#   from sklearn.preprocessing import PolynomialFeatures
-#   polf = PolynomialFeatures(include_bias=True)
-#   x = polf.fit_transform(z)
-#   coefs = np.ones(len(polf.powers_))
-#   coefs[0] = c
-#   coefs[(polf.powers_ == 1).sum(1) == 2] = np.sqrt(2)
-#   coefs[(polf.powers_ == 1).sum(1) == 1] = np.sqrt(2*c)
-#   return x * coefs
+
 EPS=1e-15
 def F_norm(A):
     if A is sparse:
@@ -126,34 +118,7 @@ def sinkhorn_knopp_adjust(Z):
         Z = torch.matmul(torch.diag(c.flatten()), Z)
 
     return Z
-# def sinkhorn_knopp_adjust_simple(Z):
-#     Zl = Z.clone()
-#
-#     for _ in range(10):
-#         # c = torch.matmul(Zl, torch.sum(Z.T, dim=1))
-#         # c = 1.0 / torch.sqrt(c)
-#         c=torch.sum(Z,dim=1)
-#         c = 1.0 / c
-#         Zl = torch.matmul(torch.diag(c.flatten()), Z)
-#         c = torch.sum(Z,dim=0)
-#         c = 1.0 / c
-#         Z = torch.matmul(Zl,torch.diag(c.flatten()))
-#     print(torch.sum(Z,dim=1))
-#     return Z
-# def shift_matrix(matrix):
-#
-#     min_negative = matrix[matrix < 0].min()
-#
-#     if min_negative == -float('inf'):
-#         return matrix
-#
-#     if torch.is_tensor(min_negative):
-#         if min_negative.numel() == 0:
-#             return matrix
-#     shift_value = abs(min_negative) + 1e-10
-#     shifted_matrix = matrix + shift_value
-#
-#     return shifted_matrix
+
 def SSKC(H, args):
     # H=H*np.sqrt(mean_degree.cpu().numpy())[:, np.newaxis]
     if args.gamma != 0:
@@ -243,68 +208,7 @@ def svd_flip(u, v, u_based_decision=True):
 
     return u, v
 
-def sub_randomized_svd(
-    Z,
-    n_components,
-    *,
-    n_iter="auto",
-    flip_sign=True,
-    random_state="warn",
-    n_oversamples=10,
-):
-    # if isinstance(Z, torch.Tensor) and (Z.is_sparse_coo() or Z.is_sparse_csr()):
-    #     warnings.warn(
-    #         "SVD with sparse PyTorch tensors may not perform efficiently. "
-    #         "Consider converting to a dense tensor for better performance.",
-    #         UserWarning,
-    #     )
 
-    if random_state == "warn":
-        warnings.warn(
-            "The default random_state will change in the future. "
-            "Set it to None or a fixed integer to avoid future warnings.",
-            FutureWarning,
-        )
-        random_state = 0
-
-    random_state = check_random_state(random_state)
-    n_random = n_components + n_oversamples
-
-    if n_iter == "auto":
-        n_iter = 7 if n_components < 0.1 * min(Z.shape) else 4
-    seed_value = 42
-    generator = torch.Generator(device=Z.device)
-    generator.manual_seed(seed_value)
-    G = torch.randn(Z.size(1), n_random, device=Z.device, dtype=Z.dtype,generator=generator)
-
-    Q = G
-    # print(Z,Q)
-    for _ in range(n_iter):
-        Q = safe_sparse_dot(Z, Q)
-        Q = safe_sparse_dot(Z.t(), Q)
-
-
-    Q = safe_sparse_dot(Z, Q)
-    # 检查 NaN 和 Inf
-
-    # Q = l_norm(Q, 1)
-    # print(Q)
-    # Q = l_norm(Q, 1)
-    Q, _ = torch.linalg.qr(Q, mode='reduced')
-
-    B = safe_sparse_dot(Z.t(), Q).t()
-    try:
-        Uhat, s, Vt = torch.linalg.svd(B, full_matrices=False)
-    except RuntimeError:
-        Vt, s, Uhat = torch.linalg.svd(B.t(), full_matrices=False)
-        Uhat = Vt  # Adjust based on matrix orientation
-
-    U = torch.matmul(Q, Uhat)
-
-    if flip_sign:
-        U, Vt = svd_flip(U, Vt)
-    # print(s)
-    return U[:, 1:n_components+1]
 def get_I(n,device):
 
     src=torch.arange(n)
@@ -315,41 +219,6 @@ def get_I(n,device):
     return adj_I
 
 
-def reweight_adjacency_batched(A, H, gamma, batch_size=10000):
-
-    A_coalesced = A.coalesce()
-    indices = A_coalesced.indices()  # [2, num_edges]
-    edge_values = A_coalesced.values()  # [num_edges]
-    num_edges = indices.shape[1]
-
-    device = H.device
-    new_values = torch.empty_like(edge_values)  # 保持原数据类型
-
-    for start_idx in range(0, num_edges, batch_size):
-        end_idx = min(start_idx + batch_size, num_edges)
-        batch_indices = indices[:, start_idx:end_idx]
-
-        rows = batch_indices[0]  # [current_batch_size]
-        cols = batch_indices[1]  # [current_batch_size]
-
-        h_i = H[rows]  # [current_batch_size, D]
-        h_j = H[cols]  # [current_batch_size, D]
-        distances = torch.norm(h_i - h_j, p=2, dim=1)  # [current_batch_size]
-
-        weights = torch.pow(distances, gamma)
-        weights[weights==0]=1# [current_batch_size]
-        weights = torch.clamp(weights, min=1e-8)  # 防止除以零
-
-        batch_values = edge_values[start_idx:end_idx].to(device)
-        new_values[start_idx:end_idx] = batch_values / weights
-
-    return torch.sparse_coo_tensor(
-        indices=indices,
-        values=new_values.to(device),
-        size=A.size(),
-        dtype=A.dtype,
-        device=device
-    )
 
 
 def coo_tensor_to_csr(sparse_tensor: torch.Tensor) -> csr_matrix:
@@ -473,43 +342,7 @@ def compu_omega_inv(H,adj,Af,args):
     return omega
 
 
-def compute_max_with_corresponding_L(matrix: torch.Tensor, L: torch.Tensor) -> tuple:
 
-    # 输入验证
-    assert matrix.dim() == 2 and matrix.size(0) == matrix.size(1), "输入必须是方阵"
-    assert L.dim() == 1, "L必须是一维向量"
-
-    # 确保数据在同一设备
-    device = matrix.device
-    L = L.to(device)
-
-    # 计算特征值绝对值 (处理复数情况)
-    eigvals = torch.linalg.eigvals(matrix)
-    # print(eigvals)
-    # abs_eig = torch.abs(eigvals)
-
-    # 初始化追踪变量
-    max_value = torch.tensor(0.0, device=device)
-    best_L = torch.tensor(0.0, device=device)  # 初始默认值
-    miu_max=[]
-    for current_L in L:
-        # 将L参数转为整数指数
-        exp = current_L.round().long().item()
-
-        # 计算表达式各部分
-        term1 = eigvals  ** exp  # λ^L
-        term2 = eigvals ** (exp + 1) - 1  # λ^(L+1) - 1
-        current_expr = torch.abs(term1 * term2)
-
-        # 获取当前最大值
-        current_max = torch.max(current_expr)
-        miu_max.append(current_max)
-        # 更新全局最大值和对应L参数
-        # if current_max > max_value:
-        #     max_value = current_max.detach().clone()
-        #     best_L = current_L.detach().clone()
-
-    return miu_max
 
 
 def compu_H(adjs,H,args,n_class,incis):
