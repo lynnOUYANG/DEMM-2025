@@ -19,50 +19,7 @@ from scipy.linalg import clarkson_woodruff_transform as cwt
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigsh
 from scipy import io
-def sample_subgraph(adj_all, features, center_nodes, num_hops):
-    device=adj_all.device
-    current_nodes = torch.unique(center_nodes)
-    all_nodes = current_nodes.clone()
 
-    nodes_at_k_minus_1 = None
-
-    for i in range(num_hops):
-        mask = torch.isin(adj_all._indices()[0], current_nodes)
-        sampled_edges = adj_all._indices()[:, mask]
-
-        current_nodes = torch.unique(sampled_edges[1])
-
-        all_nodes = torch.unique(torch.cat([all_nodes, current_nodes]))
-
-        if i == (num_hops // 2 - 1):
-            nodes_at_k_minus_1 = all_nodes.clone()
-
-    mask = torch.isin(adj_all._indices()[0], all_nodes) & torch.isin(adj_all._indices()[1], all_nodes)
-    subgraph_edges = adj_all._indices()[:, mask]
-    subgraph_values = adj_all._values()[mask]
-    # map_start=time.time()
-    node_mapping_array = np.zeros(max(all_nodes) + 1, dtype=int)
-    for idx, node in enumerate(all_nodes):
-        node_mapping_array[node.item()] = idx
-    node_mapping = torch.tensor(node_mapping_array, device=device)
-    # node_mapping = {node.item(): idx for idx, node in enumerate(all_nodes)}
-    src = subgraph_edges[0].to(device)
-    src = node_mapping[src]
-
-    dst = subgraph_edges[1].to(device)
-    dst = node_mapping[dst]
-    sizes=len(all_nodes)
-    indices = torch.stack((src, dst), dim=0).to(device)
-    # end_map=time.time()-map_start
-    # print("Elapsed time:{}".format(end_map))
-    subgraph = torch.sparse_coo_tensor(indices, subgraph_values, (sizes, sizes)).to(device)
-    subgraph=subgraph+subgraph.transpose(0,1)
-    inverse_node_mapping = torch.tensor(all_nodes, device=device)
-
-    nodes_at_k_minus_1_mapped = node_mapping[nodes_at_k_minus_1]
-    subgraph_features = features[all_nodes]
-
-    return subgraph, subgraph_features, inverse_node_mapping, nodes_at_k_minus_1_mapped
 def clustering_accuracy(y_true, y_pred):
     from sklearn.metrics import confusion_matrix
     from scipy.optimize import linear_sum_assignment
@@ -300,27 +257,7 @@ def compu_H(adjs,H,args,n_class,incis):
         norm_A = normalize_adj_from_tensor(A, 'sym', True)
         H=FFAO(norm_A,X,args.L,args.alpha)
 
-        # label = (label + 1).numpy().astype(np.float64).reshape(-1, 1)
-        #
-        # select_nodes=select_nodes.numpy().astype(np.float64).reshape(-1, 1)
-        # print(np.unique(select_nodes))
-        # print(H1.shape[0])
-        # exit()
-        # H1 = H1.cpu().numpy().astype(np.float64)
-        # H2 = H2.cpu().numpy().astype(np.float64)
-        # H3 = H3.cpu().numpy().astype(np.float64)
-        # matlab_cell = np.zeros((3, 1), dtype=object)
-        # matlab_cell[0, 0] = H1
-        # matlab_cell[1, 0] = H2
-        # matlab_cell[2, 0] = H3
-        # save_dict = {
-        #     'data': matlab_cell,
-        #     'label': label,
-        #     'select_nodes':select_nodes
-        # }
-        #
-        # io.savemat('{}.mat'.format(args.dataset), save_dict)
-        # exit()
+      
         H=l_norm(H,2)
         for j in range(num_view):
             omega[j]=compu_omega(H,adjs_I_minus[j],AF_norm[j],args,incis[j])
@@ -343,24 +280,6 @@ def top_k_eigh(adj,k):
 
     adj=adj.coalesce()
 
-    # csr_adj = csr_matrix(
-    #     (adj.values().cpu().numpy(), (adj.indices()[0].cpu().numpy(), adj.indices()[1].cpu().numpy())),
-    #     shape=adj.size()
-    # )
-    # np.random.seed(6)
-    # eigenvalues, eigenvectors = eigsh(csr_adj, k=k+1 , which='LM', v0=np.random.rand(csr_adj.shape[0]))
-    # # eigenvalues, eigenvectors = eigsh(csr_adj, k=k+1, which='LM')
-    #
-    # # eigenvectors_torch = from_dlpack(eigenvectors.toDlpack()).to(device)
-    # # eigenvalues_torch = torch.tensor(eigenvalues, device=device)
-    # # abs_eigenvalues = np.abs(eigenvalues)
-    # sorted_indices = np.argsort(-eigenvalues)
-    #
-    # sorted_eigenvalues = eigenvalues[sorted_indices]
-    # sorted_eigenvectors = eigenvectors[:, sorted_indices]
-    # print(sorted_eigenvalues[1:k+1])
-    # print(eigenvalues,eigenvectors)
-    # print(sorted_eigenvectors)
     eigenvectors=KSI(adj,k)
     return eigenvectors
 def compu_H_al(adjs,H,args,incis,n_class):
@@ -404,18 +323,7 @@ def compu_H_al(adjs,H,args,incis,n_class):
         # A=A.to_dense()
         H=top_k_eigh(norm_A,args.dim)
 
-        # print(H.shape)
-        # H=sub_randomized_svd(norm_A,n_components=n_class)
-        # H=H.cpu().numpy()
-        # Y=SNEM_rounding(H,t=2)
-        # print(Y)
-        # H,_,_=randomized_svd(norm_A,n_components=args.dim)
-        # Y=torch.tensor(Y).to(device).float()
-        H=torch.tensor(H).to(device).float()
-        # has_inf=torch.isinf(H).any().item()
-        # has_nan=torch.isnan(H).any().item()
-        # print("nan:{},inf:{}".format(has_nan,has_inf))
-        # exit()
+        
         H=l_norm(H,1)
         # print(H)
         if i==args.n_time-1:
@@ -457,21 +365,7 @@ def to_sp_tensor(coo_dict, dtype=torch.float32, device="cpu"):
     )
 
     return sparse_tensor
-def lu_inv(adj):
-    from scipy.sparse.linalg import splu
-    import scipy.sparse as sp
-    lu = splu(adj, permc_spec="COLAMD")  # 使用列近似最小度排序
 
-    # 步骤 3: 生成单位矩阵的稀疏逆（按需逐列求解）
-    n = adj.shape[0]
-    inv_columns = []
-    for i in range(n):
-        e = sp.csc_matrix(([1.0], ([i], [0])), shape=(n, 1))  # 第 i 列的单位向量
-        inv_col = lu.solve(e.toarray())  # 稀疏求解
-        inv_columns.append(inv_col)
-
-    inv_sparse_scipy = sp.hstack(inv_columns).tocoo()
-    return inv_sparse_scipy
 def filter_inv(adj,X,alpha,adj_I):
     device=adj.device
     para1=1/(alpha+1)
